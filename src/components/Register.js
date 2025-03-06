@@ -1,42 +1,66 @@
 import React, { useState } from 'react';
-import { auth, db } from '../firebase';
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { auth } from '../firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { Link } from 'react-router-dom';
+import { FiUser, FiMail, FiLock } from 'react-icons/fi';
 
 function Register() {
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [birthdate, setBirthdate] = useState('');
+  const [error, setError] = useState('');
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    setError('');
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      const user = userCredential.user;
-      await updateProfile(user, { displayName: birthdate });
-      await setDoc(doc(db, 'users', user.uid), { birthdate });
-      alert('Зарегистрирован! Теперь войдите.');
+      await createUserWithEmailAndPassword(auth, email, password);
+      alert('Зарегистрирован! Теперь войди.');
       window.location.href = '/login';
     } catch (error) {
-      alert('Ошибка: ' + error.message);
+      setError('Ошибка: ' + error.message);
     }
   };
 
   return (
-    <div>
-      <h1>Регистрация</h1>
-      <form onSubmit={handleRegister}>
-        <label>Почта:</label>
-        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required /><br />
-        <label>Пароль:</label>
-        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required /><br />
-        <label>Дата рождения (ДД.ММ.ГГГГ):</label>
-        <input type="text" value={birthdate} onChange={(e) => setBirthdate(e.target.value)} placeholder="15.08.1990" required /><br />
-        <button type="submit">Зарегистрироваться</button>
-      </form>
-      <p>Уже есть аккаунт? <Link to="/login">Вход</Link></p>
-    </div>
+    <form onSubmit={handleRegister}>
+      <h1>REGISTER</h1>
+      {error && <div className="error">{error}</div>}
+      <div className="input-group">
+        <FiUser className="icon" />
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Name"
+          required
+        />
+      </div>
+      <div className="input-group">
+        <FiMail className="icon" />
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          required
+        />
+      </div>
+      <div className="input-group">
+        <FiLock className="icon" />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          required
+        />
+      </div>
+      <button type="submit">Register</button>
+      <p>
+        Already have an account? <Link to="/login">Login</Link>
+      </p>
+    </form>
   );
 }
 
