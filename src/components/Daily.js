@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'; // Добавили useRef
+import React, { useState, useEffect, useRef } from 'react';
 import { auth, db } from '../firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -12,25 +12,24 @@ function Daily() {
   const [forecast, setForecast] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const hasFetched = useRef(false); // Переменная для отслеживания первого запроса
+  const hasFetched = useRef(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser) {
+      if (currentUser && !hasFetched.current) {
         setUser(currentUser);
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
           setUserData(userDoc.data());
-          // Выполняем запрос только если ещё не делали
-          if (!hasFetched.current) {
+          setTimeout(() => {
             fetchDailyForecast(userDoc.data());
-            hasFetched.current = true; // Отмечаем, что запрос выполнен
-          }
+            hasFetched.current = true;
+          }, 2000);
         } else {
           navigate('/profile');
         }
-      } else {
+      } else if (!currentUser) {
         navigate('/login');
       }
     });
@@ -52,7 +51,7 @@ function Daily() {
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-4o-mini', // Заменили на gpt-4o-mini
           messages: [
             { role: 'system', content: 'Ты — нумеролог, дающий точные прогнозы.' },
             { role: 'user', content: prompt },
