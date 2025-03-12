@@ -16,6 +16,7 @@ function Daily() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      console.log('Текущий пользователь:', currentUser); // Для отладки
       if (currentUser && !hasFetched.current) {
         setUser(currentUser);
         const userRef = doc(db, 'users', currentUser.uid);
@@ -27,9 +28,11 @@ function Daily() {
             hasFetched.current = true;
           }, 2000);
         } else {
+          console.log('Данные профиля не найдены, иду на /profile');
           navigate('/profile');
         }
       } else if (!currentUser) {
+        console.log('Пользователь не авторизован, иду на /login');
         navigate('/login');
       }
     });
@@ -39,19 +42,17 @@ function Daily() {
   const fetchDailyForecast = async (data) => {
     setLoading(true);
     const currentDate = new Date().toLocaleDateString('ru-RU');
-
     const prompt = `
       Ты — профессиональный нумеролог. На основе даты рождения (${data.birthDate}) 
       и текущей даты (${currentDate}) составь персонализированный прогноз на день для 
       ${data.firstName} ${data.lastName} ${data.middleName || ''}. 
       Учти нумерологические принципы. Прогноз должен быть кратким (2-3 предложения).
     `;
-
     try {
       const response = await axios.post(
         'https://api.openai.com/v1/chat/completions',
         {
-          model: 'gpt-4o-mini', // Заменили на gpt-4o-mini
+          model: 'gpt-4o-mini',
           messages: [
             { role: 'system', content: 'Ты — нумеролог, дающий точные прогнозы.' },
             { role: 'user', content: prompt },
@@ -76,6 +77,19 @@ function Daily() {
     }
   };
 
+  const handleSignOut = () => {
+    if (window.confirm('Вы точно хотите выйти?')) {
+      auth.signOut()
+        .then(() => {
+          console.log('Выход выполнен, перенаправляю на /login');
+          navigate('/login');
+        })
+        .catch((error) => {
+          console.error('Ошибка при выходе:', error);
+        });
+    }
+  };
+
   if (!user || !userData) {
     return <div>Загрузка...</div>;
   }
@@ -92,7 +106,7 @@ function Daily() {
           <p>{forecast || 'Ваши персональные рекомендации будут здесь.'}</p>
         )}
       </div>
-      <button onClick={() => auth.signOut()}>Выйти</button>
+      <button onClick={() => handleSignOut()}>Выйти</button>
     </div>
   );
 }

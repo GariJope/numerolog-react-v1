@@ -11,32 +11,34 @@ import { db } from './firebase';
 import './App.css';
 
 function App() {
+  const [currentUser, setCurrentUser] = useState(null); // Добавляем для отслеживания пользователя
   const [userProfileComplete, setUserProfileComplete] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('App.js: Начало проверки авторизации'); // Отладка
+    console.log('App.js: Начало проверки авторизации');
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
-      console.log('App.js: onAuthStateChanged вызван, пользователь:', user ? user.uid : 'нет'); // Отладка
+      console.log('App.js: onAuthStateChanged вызван, пользователь:', user ? user.uid : 'нет');
+      setCurrentUser(user); // Сохраняем пользователя
       if (user) {
         const userRef = doc(db, 'users', user.uid);
         const unsubscribeSnapshot = onSnapshot(userRef, (userDoc) => {
-          console.log('App.js: onSnapshot вызван, данные:', userDoc.exists() ? userDoc.data() : 'нет данных'); // Отладка
+          console.log('App.js: onSnapshot вызван, данные:', userDoc.exists() ? userDoc.data() : 'нет данных');
           setUserProfileComplete(userDoc.exists() && !!userDoc.data().birthDate);
-          setLoading(false); // Перемещаем сюда
+          setLoading(false);
         }, (error) => {
-          console.error('App.js: Ошибка в onSnapshot:', error); // Отладка
+          console.error('App.js: Ошибка в onSnapshot:', error);
           setUserProfileComplete(false);
-          setLoading(false); // Устанавливаем даже при ошибке
+          setLoading(false);
         });
         return () => unsubscribeSnapshot();
       } else {
-        console.log('App.js: Пользователь не авторизован'); // Отладка
+        console.log('App.js: Пользователь не авторизован');
         setUserProfileComplete(false);
         setLoading(false);
       }
     }, (error) => {
-      console.error('App.js: Ошибка в onAuthStateChanged:', error); // Отладка
+      console.error('App.js: Ошибка в onAuthStateChanged:', error);
       setLoading(false);
     });
     return () => unsubscribeAuth();
@@ -54,9 +56,18 @@ function App() {
           <Route path="/register" element={<Register />} />
           <Route
             path="/daily"
-            element={userProfileComplete ? <Daily /> : <Navigate to="/profile" />}
+            element={
+              currentUser ? ( // Проверяем, авторизован ли
+                userProfileComplete ? <Daily /> : <Navigate to="/profile" />
+              ) : (
+                <Navigate to="/login" /> // Если не авторизован, на логин
+              )
+            }
           />
-          <Route path="/profile" element={<Profile />} />
+          <Route
+            path="/profile"
+            element={currentUser ? <Profile /> : <Navigate to="/login" />}
+          />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
